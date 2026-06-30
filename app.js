@@ -1,6 +1,6 @@
 "use strict";
 
-const UNCLEAR_COLOR = "#9e9e9e";
+const UNCLEAR_COLOR = "#616161";
 const YES = 1;
 const NO = 0;
 const ULID = /[0-9A-HJKMNP-TV-Z]{26}/i;
@@ -215,11 +215,12 @@ function popup(record, p) {
       return `<div class="opt"><span>${o.title}</span><span>${c} (${total ? Math.round((c / total) * 100) : 0}%)</span></div>`;
     })
     .join("");
+  const source = p.sources ? `<br>Source: ${p.sources}` : "";
   return (
     `<b>${record.name}</b><br><i>${record.instruction || ""}</i>` +
     `<hr style="margin:6px 0"><b>${total} ${total === 1 ? "person" : "people"} reviewed this${target}</b>` +
     `<div class="opt-head">What they said:</div>${rows}` +
-    `<hr style="margin:6px 0">Result: <b style="color:${decisionColor(record, decision)}">${decision}</b>`
+    `<hr style="margin:6px 0">Result: <b style="color:${decisionColor(record, decision)}">${decision}</b>${source}`
   );
 }
 
@@ -359,32 +360,20 @@ function centroid(g) {
   return n ? [sx / n, sy / n] : [null, null];
 }
 
-const VALUE_NAME = { 1: "yes", 0: "no", 2: "maybe", 3: "bad_imagery" };
-const COUNT_SHARE = /^\d+_(count|share)$/;
-const INTERNAL = new Set(["idx", "task_id", "total_count", "agreement", "project_internal_id", "group_internal_id", "task_internal_id"]);
-
 function readable(record, p) {
-  const total = Number(p.total_count) || 0;
-  const out = {
-    project: record.name,
+  return {
+    project_id: record.numeric_id,
+    project_name: record.name,
     task_id: p.task_id,
     validation_result_50: classify(record, p),
     answer: winning(record, p).option.title,
-    total_mappers: total,
+    total_validators: Number(p.total_count) || 0,
+    yes_count: Number(p["1_count"] || 0),
+    no_count: Number(p["0_count"] || 0),
+    maybe_count: Number(p["2_count"] || 0),
+    sources: p.sources != null ? p.sources : "",
+    imagery_tms: record.imagery_tms || "",
   };
-  for (const o of record.options) {
-    const name = VALUE_NAME[o.value] || `option_${o.value}`;
-    const c = Number(p[`${o.value}_count`] || 0);
-    out[`${name}_count`] = c;
-    out[`${name}_pct`] = total ? Math.round((c / total) * 100) : 0;
-  }
-  for (const k in p) {
-    if (INTERNAL.has(k) || COUNT_SHARE.test(k) || k in out) continue;
-    out[k] = p[k];
-  }
-  out.imagery_source = record.source || "";
-  out.imagery_tms = record.imagery_tms || "";
-  return out;
 }
 
 function download(name, text, mime) {
@@ -417,10 +406,7 @@ function exportAllGeo(records) {
 }
 
 function exportCsv(record) {
-  const rows = record.geojson.features.map((f) => {
-    const [lon, lat] = centroid(f.geometry);
-    return { ...readable(record, f.properties), centroid_lon: lon, centroid_lat: lat };
-  });
+  const rows = record.geojson.features.map((f) => readable(record, f.properties));
   const head = Object.keys(rows[0]);
   const esc = (v) => {
     const t = v === null || v === undefined ? "" : String(v);

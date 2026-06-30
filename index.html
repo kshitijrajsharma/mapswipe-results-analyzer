@@ -47,14 +47,12 @@
       <input id="opacity" type="range" min="0" max="100" value="35" />
       <p class="hint">Lower it to see the satellite imagery through the colored areas.</p>
 
-      <div class="show-filter">Show on map:
-        <label><input type="checkbox" id="show-accepted" checked> accepted</label>
-        <label><input type="checkbox" id="show-rejected" checked> rejected</label>
-        <label><input type="checkbox" id="show-unclear" checked> unclear</label>
-      </div>
       <div class="show-filter">Layers:
         <label><input type="checkbox" id="layer-imagery"> imagery</label>
         <label><input type="checkbox" id="layer-aoi" checked> AOI</label>
+        <label><input type="checkbox" id="show-accepted" checked> <span class="sw accepted"></span> accepted</label>
+        <label><input type="checkbox" id="show-rejected" checked> <span class="sw rejected"></span> rejected</label>
+        <label><input type="checkbox" id="show-unclear" checked> <span class="sw unclear"></span> unclear</label>
       </div>
     </section>
 
