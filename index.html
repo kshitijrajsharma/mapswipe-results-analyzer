@@ -6,6 +6,8 @@
   <title>MapSwipe Results Analyzer</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" />
@@ -44,28 +46,37 @@
         <strong id="opacity-value">35%</strong></label>
       <input id="opacity" type="range" min="0" max="100" value="35" />
       <p class="hint">Lower it to see the satellite imagery through the colored areas.</p>
+
+      <div class="show-filter">Show on map:
+        <label><input type="checkbox" id="show-accepted" checked> accepted</label>
+        <label><input type="checkbox" id="show-rejected" checked> rejected</label>
+        <label><input type="checkbox" id="show-unclear" checked> unclear</label>
+      </div>
     </section>
 
     <section class="panel">
       <div class="row spread">
         <h2>Projects</h2>
-        <button id="export-all" class="link" disabled>Export all accepted</button>
+        <span class="header-actions">
+          <button id="umap-all" class="link" disabled>Open in uMap</button>
+          <button id="export-all" class="link" disabled>Export accepted</button>
+        </span>
       </div>
       <div id="projects"></div>
     </section>
-
-    <section class="panel legend">
-      <h2>Legend</h2>
-      <div><span class="swatch accepted"></span> Accepted (most mappers said yes)</div>
-      <div><span class="swatch rejected"></span> Rejected (most mappers said no)</div>
-      <div><span class="swatch unclear"></span> Unclear (no clear majority)</div>
-      <div><span class="swatch aoi"></span> Project area</div>
-    </section>
   </aside>
 
-  <main id="map"></main>
+  <main id="map">
+    <div id="legend">
+      <div><span class="swatch accepted"></span> Accepted</div>
+      <div><span class="swatch rejected"></span> Rejected</div>
+      <div><span class="swatch unclear"></span> Unclear</div>
+      <div><span class="swatch aoi"></span> Project area</div>
+    </div>
+  </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
   <script src="app.js"></script>
 </body>

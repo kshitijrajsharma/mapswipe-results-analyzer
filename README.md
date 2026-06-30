@@ -34,8 +34,13 @@ of mappers said yes, **Rejected** if more than your threshold said no, otherwise
 | --- | --- |
 | Accept threshold | The share of mappers who must say yes for an area to count as accepted. |
 | See-through grid | Fill opacity of the colored areas, so you can see imagery behind them. |
-| results / imagery / AOI | Show or hide the result colors, the project's satellite imagery, and its area. |
+| Show on map | Toggle the accepted, rejected, and unclear areas on the map. |
+| Project checkbox / imagery / AOI | Toggle the whole project, its satellite imagery, and its area. |
 | Download | Save accepted, rejected, or not-sure areas as GeoJSON, or all areas as CSV. |
+| Open in uMap | Open the accepted areas as points in a new editable uMap. |
+
+Areas cluster into counts when zoomed out and become the colored grid when zoomed in. Very large
+projects load for counting and download but skip drawing on the map.
 
 ## Terms
 
