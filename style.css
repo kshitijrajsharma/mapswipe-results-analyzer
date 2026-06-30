@@ -177,6 +177,7 @@ button.link:disabled { color: #c7a9a9; text-decoration: none; cursor: not-allowe
   #sidebar { width: 100%; max-height: 50vh; border-right: none; border-bottom: 1px solid var(--line); }
   #map { flex: 1; }
   #projects { max-height: none; }
+  #brand p { display: none; }
   #legend { bottom: 8px; right: 8px; padding: 6px 8px; font-size: 11px; }
   #panel-toggle { display: block; }
   body.panel-collapsed #sidebar { max-height: none; overflow: visible; }
