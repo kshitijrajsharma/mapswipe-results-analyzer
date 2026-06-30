@@ -152,6 +152,7 @@ button.link:disabled { color: #c7a9a9; text-decoration: none; cursor: not-allowe
 .card-head .name { font-weight: 700; font-size: 13px; color: var(--hot-navy); flex: 1; }
 .card-head .x { flex-shrink: 0; }
 .project-card .meta { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
+.project-card .meta .tip { border-bottom: 1px dotted var(--muted); cursor: help; }
 .project-card .counts { display: flex; gap: 12px; font-size: 12px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
 .project-card .layers { display: flex; gap: 14px; font-size: 12px; margin-bottom: 6px; }
 .project-card .layers label { display: flex; align-items: center; gap: 5px; margin: 0; }

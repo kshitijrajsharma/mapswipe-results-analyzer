@@ -130,6 +130,8 @@ async function resolveProject(input) {
     numeric_id: String(pp.id),
     name: pp.name,
     project_type: pp.projectType,
+    status: pp.status,
+    progress: pp.progress,
     instruction,
     geojson_url: exp.file.url,
     tile_server: tileServer,
@@ -269,14 +271,17 @@ function renderProjects() {
     const card = document.createElement("div");
     card.className = "project-card";
     const note = record.drawn ? "" : " · too many to draw, use downloads";
-    const target = record.verification_number ? ` · target: at least ${record.verification_number} human validators` : "";
-    const below = c.below ? ` · ${c.below} below target` : "";
+    const target = record.verification_number
+      ? ` · <span class="tip" title="at least ${record.verification_number} human validators">≥${record.verification_number} validators</span>`
+      : "";
+    const progress = record.progress != null ? ` · ${(record.status || "").toLowerCase()} ${Math.floor(record.progress * 100)}%` : "";
+    const below = c.below ? ` · ${c.below} grids below target` : "";
     card.innerHTML =
       `<div class="card-head">` +
       `<label><input type="checkbox" data-layer="results" ${record.visible ? "checked" : ""}></label>` +
       `<span class="name">${record.name}</span>` +
       `<button class="link x" data-remove>remove</button></div>` +
-      `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${target}${below}${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
+      `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${progress}${target}${below}${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
       `<div class="counts"><span class="count-accepted">accepted ${c.accepted}</span><span class="count-rejected">rejected ${c.rejected}</span><span class="count-unclear">unclear ${c.unclear}</span></div>` +
       `<div class="layers">` +
       `<label><input type="checkbox" data-layer="imagery" ${record.tile_server ? "" : "disabled"} ${record.showImagery ? "checked" : ""}> imagery</label>` +
