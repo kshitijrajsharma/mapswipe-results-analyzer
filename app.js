@@ -359,6 +359,10 @@ function centroid(g) {
   return n ? [sx / n, sy / n] : [null, null];
 }
 
+const VALUE_NAME = { 1: "yes", 0: "no", 2: "maybe", 3: "bad_imagery" };
+const COUNT_SHARE = /^\d+_(count|share)$/;
+const INTERNAL = new Set(["idx", "task_id", "total_count", "agreement", "project_internal_id", "group_internal_id", "task_internal_id"]);
+
 function readable(record, p) {
   const total = Number(p.total_count) || 0;
   const out = {
@@ -367,14 +371,19 @@ function readable(record, p) {
     validation_result_50: classify(record, p),
     answer: winning(record, p).option.title,
     total_mappers: total,
-    source: record.source || "",
-    imagery_tms: record.imagery_tms || "",
   };
   for (const o of record.options) {
+    const name = VALUE_NAME[o.value] || `option_${o.value}`;
     const c = Number(p[`${o.value}_count`] || 0);
-    out[`${o.title} (count)`] = c;
-    out[`${o.title} (%)`] = total ? Math.round((c / total) * 100) : 0;
+    out[`${name}_count`] = c;
+    out[`${name}_pct`] = total ? Math.round((c / total) * 100) : 0;
   }
+  for (const k in p) {
+    if (INTERNAL.has(k) || COUNT_SHARE.test(k) || k in out) continue;
+    out[k] = p[k];
+  }
+  out.imagery_source = record.source || "";
+  out.imagery_tms = record.imagery_tms || "";
   return out;
 }
 
