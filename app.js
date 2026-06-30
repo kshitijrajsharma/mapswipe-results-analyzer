@@ -13,17 +13,18 @@ const FALLBACK = [
   { value: 3, title: "Bad imagery", iconColor: "#9E9E9E" },
 ];
 
-const UMAP_NEW = "https://umap.hotosm.org/en/map/new/";
 const DECISIONS = ["accepted", "rejected", "unclear"];
 const POLY_LIMIT = 8000;
 const DOT_LIMIT = 200000;
-const GRID_ZOOM = 16;
+const GRID_ZOOM = 18;
 
 const state = {
   projects: new Map(),
   threshold: 0.5,
   fillOpacity: 0.35,
   show: { accepted: true, rejected: true, unclear: true },
+  showImagery: false,
+  showAoi: true,
 };
 
 const map = L.map("map", { maxZoom: 22, preferCanvas: true }).setView([10.5, -66.95], 12);
@@ -54,9 +55,11 @@ const els = {
   showAccepted: el("show-accepted"),
   showRejected: el("show-rejected"),
   showUnclear: el("show-unclear"),
+  imagery: el("layer-imagery"),
+  aoi: el("layer-aoi"),
   projects: el("projects"),
   exportAll: el("export-all"),
-  umapAll: el("umap-all"),
+  exportAccepted: el("export-accepted"),
 };
 
 const setStatus = (m, k) => {
@@ -133,6 +136,11 @@ async function resolveProject(input) {
     project_type: pp.projectType,
     status: pp.status,
     progress: pp.progress,
+    contributors: pp.numberOfContributorUsers,
+    region: pp.region,
+    organization: (pp.requestingOrganization && pp.requestingOrganization.name) || null,
+    created: pp.createdAt ? pp.createdAt.slice(0, 10) : null,
+    mapswipe_url: PAGE(pp.firebaseId || id),
     instruction,
     geojson_url: exp.file.url,
     tile_server: tileServer,
@@ -253,10 +261,11 @@ function onMap(layer, on) {
 }
 
 function applyVisibility(record) {
+  if (state.showImagery && !record.imageryLayer && record.tile_server) record.imageryLayer = makeImagery(record.tile_server);
   onMap(record.polyLayer, record.visible && map.getZoom() >= GRID_ZOOM);
   onMap(record.cluster, record.visible);
-  onMap(record.aoiLayer, record.visible && record.showAoi);
-  onMap(record.imageryLayer, record.visible && record.showImagery);
+  onMap(record.aoiLayer, record.visible && state.showAoi);
+  onMap(record.imageryLayer, record.visible && state.showImagery);
 }
 
 function refresh() {
@@ -282,37 +291,54 @@ function renderProjects() {
     const below = c.below ? ` · ${c.below} grids below target` : "";
     card.innerHTML =
       `<div class="card-head">` +
-      `<label><input type="checkbox" data-layer="results" ${record.visible ? "checked" : ""}></label>` +
-      `<span class="name">${record.name}</span>` +
+      `<label><input type="checkbox" data-results ${record.visible ? "checked" : ""}></label>` +
+      `<span class="name" data-expand>${record.showInfo ? "▾" : "▸"} ${record.name}</span>` +
       `<button class="link x" data-remove>remove</button></div>` +
       `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${progress}${target}${below}${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
       `<div class="counts"><span class="count-accepted">accepted ${c.accepted}</span><span class="count-rejected">rejected ${c.rejected}</span><span class="count-unclear">unclear ${c.unclear}</span></div>` +
-      `<div class="layers">` +
-      `<label><input type="checkbox" data-layer="imagery" ${record.tile_server ? "" : "disabled"} ${record.showImagery ? "checked" : ""}> imagery</label>` +
-      `<label><input type="checkbox" data-layer="aoi" ${record.aoiLayer ? "" : "disabled"} ${record.showAoi ? "checked" : ""}> AOI</label>` +
-      `</div>` +
-      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="rejected">rejected</button><button class="link" data-dl="unclear">not sure</button><button class="link" data-all>all .geojson</button><button class="link" data-csv>all .csv</button></div>`;
+      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="rejected">rejected</button><button class="link" data-dl="unclear">not sure</button><button class="link" data-all>all .geojson</button><button class="link" data-csv>all .csv</button></div>` +
+      (record.showInfo ? infoHtml(record) : "");
 
-    card.querySelectorAll("[data-layer]").forEach((box) =>
-      box.addEventListener("change", (ev) => toggleLayer(record, box.dataset.layer, ev.target.checked))
-    );
+    card.querySelector("[data-results]").addEventListener("change", (ev) => toggleProject(record, ev.target.checked));
     card.querySelectorAll("[data-dl]").forEach((b) => b.addEventListener("click", () => exportDecision([record], b.dataset.dl)));
-    card.querySelector("[data-all]").addEventListener("click", () => exportAllGeo(record));
+    card.querySelector("[data-all]").addEventListener("click", () => exportAllGeo([record]));
     card.querySelector("[data-csv]").addEventListener("click", () => exportCsv(record));
+    card.querySelector("[data-expand]").addEventListener("click", () => {
+      record.showInfo = !record.showInfo;
+      renderProjects();
+    });
     card.querySelector("[data-remove]").addEventListener("click", () => removeProject(record));
+    card.querySelectorAll(".copyrow .copy").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const inp = btn.parentElement.querySelector("input");
+        inp.select();
+        if (navigator.clipboard) navigator.clipboard.writeText(inp.value).catch(() => {});
+        const label = btn.textContent;
+        btn.textContent = "copied";
+        setTimeout(() => { btn.textContent = label; }, 1200);
+      })
+    );
     els.projects.appendChild(card);
   }
   els.exportAll.disabled = state.projects.size === 0;
-  els.umapAll.disabled = state.projects.size === 0;
+  els.exportAccepted.disabled = state.projects.size === 0;
 }
 
-function toggleLayer(record, kind, on) {
-  if (kind === "results") record.visible = on;
-  if (kind === "imagery") {
-    if (on && !record.imageryLayer) record.imageryLayer = makeImagery(record.tile_server);
-    record.showImagery = on;
-  }
-  if (kind === "aoi") record.showAoi = on;
+function infoHtml(record) {
+  const rows = [];
+  if (record.region) rows.push(`<div><b>Region:</b> ${record.region}</div>`);
+  if (record.organization) rows.push(`<div><b>Organisation:</b> ${record.organization}</div>`);
+  if (record.contributors != null) rows.push(`<div><b>Contributors:</b> ${record.contributors}</div>`);
+  rows.push(`<div><b>Validations:</b> ${record.total_validations}</div>`);
+  if (record.instruction) rows.push(`<div><b>Question:</b> ${record.instruction}</div>`);
+  if (record.created) rows.push(`<div><b>Created:</b> ${record.created}</div>`);
+  const copy = (label, val) =>
+    val ? `<div class="copyrow"><span>${label}</span><input readonly value="${val}"><button class="link copy">copy</button></div>` : "";
+  return `<div class="info">${rows.join("")}${copy("MapSwipe", record.mapswipe_url)}${copy("Imagery TMS", record.imagery_tms)}</div>`;
+}
+
+function toggleProject(record, on) {
+  record.visible = on;
   applyVisibility(record);
 }
 
@@ -371,13 +397,14 @@ function exportDecision(records, decision) {
   download(`${base}.geojson`, JSON.stringify({ type: "FeatureCollection", features }), "application/geo+json");
 }
 
-function exportAllGeo(record) {
-  const features = record.geojson.features.map((f) => ({
-    type: "Feature",
-    geometry: f.geometry,
-    properties: readable(record, f.properties),
-  }));
-  download(`validation_${record.numeric_id}.geojson`, JSON.stringify({ type: "FeatureCollection", name: record.name, features }), "application/geo+json");
+function exportAllGeo(records) {
+  const features = [];
+  for (const record of records)
+    for (const f of record.geojson.features)
+      features.push({ type: "Feature", geometry: f.geometry, properties: readable(record, f.properties) });
+  if (!features.length) return setStatus("No data to export.", "error");
+  const base = records.length === 1 ? `validation_${records[0].numeric_id}` : "validation_combined";
+  download(`${base}.geojson`, JSON.stringify({ type: "FeatureCollection", features }), "application/geo+json");
 }
 
 function exportCsv(record) {
@@ -392,45 +419,6 @@ function exportCsv(record) {
   };
   const csv = [head.join(",")].concat(rows.map((r) => head.map((h) => esc(r[h])).join(","))).join("\n");
   download(`all_results_${record.numeric_id}.csv`, csv, "text/csv");
-}
-
-function acceptedPointsFC(records) {
-  const features = [];
-  const names = [];
-  for (const record of records) {
-    if (!names.includes(record.name)) names.push(record.name);
-    for (const f of record.geojson.features) {
-      if (classify(record, f.properties) !== "accepted") continue;
-      const [lon, lat] = centroid(f.geometry);
-      if (lat === null) continue;
-      const total = Number(f.properties.total_count) || 0;
-      features.push({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [Math.round(lon * 1e5) / 1e5, Math.round(lat * 1e5) / 1e5] },
-        properties: {
-          project: record.name,
-          answer: winning(record, f.properties).option.title,
-          yes_pct: total ? Math.round(shareOf(f.properties, YES) * 100) : 0,
-          mappers: total,
-        },
-      });
-    }
-  }
-  return { type: "FeatureCollection", name: `MapSwipe accepted: ${names.join("; ")}`, features };
-}
-
-function openInUmap(records) {
-  const fc = acceptedPointsFC(records);
-  if (!fc.features.length) return setStatus("No accepted areas to open.", "error");
-  const url = `${UMAP_NEW}?dataFormat=geojson&data=${encodeURIComponent(JSON.stringify(fc))}`;
-  if (url.length <= 4000) {
-    window.open(url, "_blank", "noopener");
-    setStatus(`Opening ${fc.features.length} accepted points in uMap.`, "ok");
-    return;
-  }
-  download("accepted_points.geojson", JSON.stringify(fc), "application/geo+json");
-  window.open(UMAP_NEW, "_blank", "noopener");
-  setStatus(`${fc.features.length} accepted points downloaded. In the uMap tab, use the import icon, drop the file, choose GeoJSON, and import.`, "ok");
 }
 
 function fitAll() {
@@ -458,7 +446,8 @@ async function loadProject(value) {
 
   const n = geojson.features.length;
   const optionByValue = new Map(descriptor.options.map((o) => [o.value, o]));
-  const record = { ...descriptor, geojson, optionByValue, markers: [], polys: [], drawn: n <= DOT_LIMIT, visible: true, showImagery: false, showAoi: true, imageryLayer: null, cluster: null };
+  const record = { ...descriptor, geojson, optionByValue, markers: [], polys: [], drawn: n <= DOT_LIMIT, visible: true, imageryLayer: null, cluster: null };
+  record.total_validations = geojson.features.reduce((s, f) => s + (Number(f.properties.total_count) || 0), 0);
   record.polyLayer = L.featureGroup();
   if (n <= POLY_LIMIT) {
     record.polyLayer = L.geoJSON(geojson, {
@@ -576,8 +565,16 @@ for (const d of DECISIONS) {
     writeUrl();
   });
 }
-els.exportAll.addEventListener("click", () => exportDecision([...state.projects.values()], "accepted"));
-els.umapAll.addEventListener("click", () => openInUmap([...state.projects.values()]));
+els.imagery.addEventListener("change", () => {
+  state.showImagery = els.imagery.checked;
+  for (const r of state.projects.values()) applyVisibility(r);
+});
+els.aoi.addEventListener("change", () => {
+  state.showAoi = els.aoi.checked;
+  for (const r of state.projects.values()) applyVisibility(r);
+});
+els.exportAll.addEventListener("click", () => exportAllGeo([...state.projects.values()]));
+els.exportAccepted.addEventListener("click", () => exportDecision([...state.projects.values()], "accepted"));
 el("panel-toggle").addEventListener("click", () => {
   document.body.classList.toggle("panel-collapsed");
   setTimeout(() => map.invalidateSize(), 200);

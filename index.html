@@ -52,14 +52,18 @@
         <label><input type="checkbox" id="show-rejected" checked> rejected</label>
         <label><input type="checkbox" id="show-unclear" checked> unclear</label>
       </div>
+      <div class="show-filter">Layers:
+        <label><input type="checkbox" id="layer-imagery"> imagery</label>
+        <label><input type="checkbox" id="layer-aoi" checked> AOI</label>
+      </div>
     </section>
 
     <section class="panel">
       <div class="row spread">
         <h2>Projects</h2>
         <span class="header-actions">
-          <button id="umap-all" class="link" disabled>Open in uMap</button>
-          <button id="export-all" class="link" disabled>Export accepted</button>
+          <button id="export-all" class="link" disabled>Export all</button>
+          <button id="export-accepted" class="link" disabled>Export accepted</button>
         </span>
       </div>
       <div id="projects"></div>

@@ -149,8 +149,16 @@ button.link:disabled { color: #c7a9a9; text-decoration: none; cursor: not-allowe
 .project-card { border-top: 1px solid var(--line); padding: 10px 0; }
 .project-card:first-child { border-top: none; }
 .card-head { display: flex; align-items: center; gap: 7px; }
-.card-head .name { font-weight: 700; font-size: 13px; color: var(--hot-navy); flex: 1; }
+.card-head .name { font-weight: 700; font-size: 13px; color: var(--hot-navy); flex: 1; cursor: pointer; user-select: none; }
+.card-head .name:hover { color: var(--hot-red); }
 .card-head .x { flex-shrink: 0; }
+
+.info { margin-top: 8px; padding: 8px 10px; background: #f4f6f9; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+.info > div { margin: 2px 0; }
+.info .copyrow { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.info .copyrow span { width: 84px; flex-shrink: 0; color: var(--muted); }
+.info .copyrow input { flex: 1; min-width: 0; font-size: 11px; padding: 4px 6px; border: 1px solid #c3cad6; border-radius: 4px; background: #fff; }
+.info .copyrow .copy { flex-shrink: 0; }
 .project-card .meta { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
 .project-card .meta .tip { border-bottom: 1px dotted var(--muted); cursor: help; }
 .project-card .counts { display: flex; gap: 12px; font-size: 12px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
