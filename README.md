@@ -3,6 +3,7 @@
 See MapSwipe project results on a map and export the features you want. It runs as a single static
 page in the browser and shows each project's own answer labels in place of the raw `0/1/2` codes.
 
+
 ## Run
 
 Open `index.html` in a browser. If your browser blocks `fetch` from `file://`, serve the folder:
