@@ -169,6 +169,7 @@ button.link:disabled { color: #c7a9a9; text-decoration: none; cursor: not-allowe
 .leaflet-popup-content { font-size: 12px; line-height: 1.5; }
 .leaflet-popup-content b { color: var(--hot-navy); }
 .leaflet-popup-content .opt { display: flex; justify-content: space-between; gap: 12px; }
+.leaflet-popup-content .opt-head { margin: 4px 0 2px; color: var(--muted); }
 
 @media (max-width: 720px) {
   body { flex-direction: column; }

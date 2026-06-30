@@ -113,7 +113,7 @@ async function resolveProject(input) {
   const exp = pp.exportAggregatedResultsWithGeometry;
   if (!exp || !exp.file || !exp.file.url) throw new Error("This project has no aggregated-results export yet.");
 
-  let options = null, instruction = null, tileServer = null;
+  let options = null, instruction = null, tileServer = null, verification = null;
   const fb = await fetch(FIREBASE(pp.firebaseId || id));
   if (fb.ok) {
     const r = await fb.json();
@@ -121,6 +121,7 @@ async function resolveProject(input) {
       options = r.customOptions || null;
       instruction = r.projectInstruction || null;
       tileServer = r.tileServer || null;
+      verification = r.verificationNumber || null;
     }
   }
   const custom = Array.isArray(options) && options.length > 0;
@@ -132,6 +133,7 @@ async function resolveProject(input) {
     instruction,
     geojson_url: exp.file.url,
     tile_server: tileServer,
+    verification_number: verification,
     aoi: { url: (pp.exportAreaOfInterest && pp.exportAreaOfInterest.file && pp.exportAreaOfInterest.file.url) || null, bbox: (pp.aoiGeometry && pp.aoiGeometry.bbox) || null },
     options: custom ? options : FALLBACK,
     options_source: custom ? "firebase" : "fallback-defaults",
@@ -191,18 +193,28 @@ const dotStyle = (record, f) => ({
 
 function popup(record, p) {
   const total = Number(p.total_count) || 0;
+  const target = record.verification_number ? ` (target: at least ${record.verification_number})` : "";
+  const decision = classify(record, p);
   const rows = record.options
     .map((o) => {
       const c = Number(p[`${o.value}_count`] || 0);
       return `<div class="opt"><span>${o.title}</span><span>${c} (${total ? Math.round((c / total) * 100) : 0}%)</span></div>`;
     })
     .join("");
-  return `<b>${record.name}</b><br><i>${record.instruction || ""}</i><br>Decision: <b>${classify(record, p)}</b><br>${rows}<hr style="margin:6px 0">Mappers: ${total}`;
+  return (
+    `<b>${record.name}</b><br><i>${record.instruction || ""}</i>` +
+    `<hr style="margin:6px 0"><b>${total} ${total === 1 ? "person" : "people"} reviewed this${target}</b>` +
+    `<div class="opt-head">What they said:</div>${rows}` +
+    `<hr style="margin:6px 0">Result: <b style="color:${decisionColor(record, decision)}">${decision}</b>`
+  );
 }
 
 function tally(record) {
-  const c = { accepted: 0, rejected: 0, unclear: 0 };
-  for (const f of record.geojson.features) c[classify(record, f.properties)]++;
+  const c = { accepted: 0, rejected: 0, unclear: 0, below: 0 };
+  for (const f of record.geojson.features) {
+    c[classify(record, f.properties)]++;
+    if (record.verification_number && Number(f.properties.total_count) < record.verification_number) c.below++;
+  }
   return c;
 }
 
@@ -257,12 +269,14 @@ function renderProjects() {
     const card = document.createElement("div");
     card.className = "project-card";
     const note = record.drawn ? "" : " · too many to draw, use downloads";
+    const target = record.verification_number ? ` · target: at least ${record.verification_number} human validators` : "";
+    const below = c.below ? ` · ${c.below} below target` : "";
     card.innerHTML =
       `<div class="card-head">` +
       `<label><input type="checkbox" data-layer="results" ${record.visible ? "checked" : ""}></label>` +
       `<span class="name">${record.name}</span>` +
       `<button class="link x" data-remove>remove</button></div>` +
-      `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
+      `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${target}${below}${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
       `<div class="counts"><span class="count-accepted">accepted ${c.accepted}</span><span class="count-rejected">rejected ${c.rejected}</span><span class="count-unclear">unclear ${c.unclear}</span></div>` +
       `<div class="layers">` +
       `<label><input type="checkbox" data-layer="imagery" ${record.tile_server ? "" : "disabled"} ${record.showImagery ? "checked" : ""}> imagery</label>` +
