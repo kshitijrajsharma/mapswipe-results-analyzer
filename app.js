@@ -125,6 +125,7 @@ async function resolveProject(input) {
     }
   }
   const custom = Array.isArray(options) && options.length > 0;
+  const ts = tileServer || {};
   return {
     ulid: pp.firebaseId || id,
     numeric_id: String(pp.id),
@@ -135,6 +136,8 @@ async function resolveProject(input) {
     instruction,
     geojson_url: exp.file.url,
     tile_server: tileServer,
+    source: ts.credits || ts.name || null,
+    imagery_tms: ts.url ? ts.url.split("{key}").join(ts.apiKey || "") : null,
     verification_number: verification,
     aoi: { url: (pp.exportAreaOfInterest && pp.exportAreaOfInterest.file && pp.exportAreaOfInterest.file.url) || null, bbox: (pp.aoiGeometry && pp.aoiGeometry.bbox) || null },
     options: custom ? options : FALLBACK,
@@ -180,9 +183,10 @@ const colorOf = (record, v) => {
 const decisionColor = (record, d) =>
   d === "accepted" ? colorOf(record, YES) : d === "rejected" ? colorOf(record, NO) : UNCLEAR_COLOR;
 
+const BORDER = { accepted: "#1B5E20", rejected: "#B71C1C", unclear: "#102027" };
 const polyStyle = (record, f) => {
-  const color = decisionColor(record, classify(record, f.properties));
-  return { color, weight: Math.max(1, Math.round((1 - state.fillOpacity) * 2.5)), opacity: 1, fillColor: color, fillOpacity: state.fillOpacity };
+  const d = classify(record, f.properties);
+  return { color: BORDER[d], weight: Math.max(1.5, Math.round((1 - state.fillOpacity) * 3)), opacity: 1, fillColor: decisionColor(record, d), fillOpacity: state.fillOpacity };
 };
 const dotStyle = (record, f) => ({
   radius: 6,
@@ -287,12 +291,13 @@ function renderProjects() {
       `<label><input type="checkbox" data-layer="imagery" ${record.tile_server ? "" : "disabled"} ${record.showImagery ? "checked" : ""}> imagery</label>` +
       `<label><input type="checkbox" data-layer="aoi" ${record.aoiLayer ? "" : "disabled"} ${record.showAoi ? "checked" : ""}> AOI</label>` +
       `</div>` +
-      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="rejected">rejected</button><button class="link" data-dl="unclear">not sure</button><button class="link" data-csv>csv (all)</button></div>`;
+      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="rejected">rejected</button><button class="link" data-dl="unclear">not sure</button><button class="link" data-all>all .geojson</button><button class="link" data-csv>all .csv</button></div>`;
 
     card.querySelectorAll("[data-layer]").forEach((box) =>
       box.addEventListener("change", (ev) => toggleLayer(record, box.dataset.layer, ev.target.checked))
     );
     card.querySelectorAll("[data-dl]").forEach((b) => b.addEventListener("click", () => exportDecision([record], b.dataset.dl)));
+    card.querySelector("[data-all]").addEventListener("click", () => exportAllGeo(record));
     card.querySelector("[data-csv]").addEventListener("click", () => exportCsv(record));
     card.querySelector("[data-remove]").addEventListener("click", () => removeProject(record));
     els.projects.appendChild(card);
@@ -330,7 +335,15 @@ function centroid(g) {
 
 function readable(record, p) {
   const total = Number(p.total_count) || 0;
-  const out = { project: record.name, task_id: p.task_id, decision: classify(record, p), majority_answer: winning(record, p).option.title, total_mappers: total };
+  const out = {
+    project: record.name,
+    task_id: p.task_id,
+    validation_result_50: classify(record, p),
+    answer: winning(record, p).option.title,
+    total_mappers: total,
+    source: record.source || "",
+    imagery_tms: record.imagery_tms || "",
+  };
   for (const o of record.options) {
     const c = Number(p[`${o.value}_count`] || 0);
     out[`${o.title} (count)`] = c;
@@ -356,6 +369,15 @@ function exportDecision(records, decision) {
   if (!features.length) return setStatus(`No ${decision} features at the current threshold.`, "error");
   const base = records.length === 1 ? `${decision}_${records[0].numeric_id}` : `${decision}_combined`;
   download(`${base}.geojson`, JSON.stringify({ type: "FeatureCollection", features }), "application/geo+json");
+}
+
+function exportAllGeo(record) {
+  const features = record.geojson.features.map((f) => ({
+    type: "Feature",
+    geometry: f.geometry,
+    properties: readable(record, f.properties),
+  }));
+  download(`validation_${record.numeric_id}.geojson`, JSON.stringify({ type: "FeatureCollection", name: record.name, features }), "application/geo+json");
 }
 
 function exportCsv(record) {
