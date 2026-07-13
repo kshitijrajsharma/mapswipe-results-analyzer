@@ -166,18 +166,15 @@ button.link:disabled { color: #c7a9a9; text-decoration: none; cursor: not-allowe
 .project-card .layers label { display: flex; align-items: center; gap: 5px; margin: 0; }
 .project-card .downloads { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--muted); }
 .count-accepted { color: #388e3c; font-weight: 700; }
-.count-rejected { color: #d32f2f; font-weight: 700; }
-.count-unclear { color: #616161; font-weight: 700; }
+.count-others { color: #616161; font-weight: 700; }
 
 .show-filter .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; vertical-align: middle; }
 .show-filter .sw.accepted { background: #388e3c; }
-.show-filter .sw.rejected { background: #d32f2f; }
-.show-filter .sw.unclear { background: #616161; }
+.show-filter .sw.others { background: #616161; }
 
 .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0, 0, 0, 0.2); }
 .swatch.accepted { background: #388e3c; }
-.swatch.rejected { background: #d32f2f; }
-.swatch.unclear { background: #616161; }
+.swatch.others { background: #616161; }
 .swatch.aoi { background: transparent; border: 2px dashed var(--hot-navy); }
 
 .leaflet-popup-content { font-size: 12px; line-height: 1.5; }

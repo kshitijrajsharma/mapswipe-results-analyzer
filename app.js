@@ -2,7 +2,6 @@
 
 const UNCLEAR_COLOR = "#616161";
 const YES = 1;
-const NO = 0;
 const ULID = /[0-9A-HJKMNP-TV-Z]{26}/i;
 const PAGE = (u) => `https://mapswipe.org/en/projects/${u}/`;
 const FIREBASE = (id) => `https://msf-mapswipe.firebaseio.com/v2/projects/${id}.json`;
@@ -13,7 +12,7 @@ const FALLBACK = [
   { value: 3, title: "Bad imagery", iconColor: "#9E9E9E" },
 ];
 
-const DECISIONS = ["accepted", "rejected", "unclear"];
+const DECISIONS = ["accepted", "others"];
 const POLY_LIMIT = 8000;
 const DOT_LIMIT = 200000;
 const GRID_ZOOM = 18;
@@ -22,7 +21,7 @@ const state = {
   projects: new Map(),
   threshold: 0.5,
   fillOpacity: 0.35,
-  show: { accepted: true, rejected: true, unclear: true },
+  show: { accepted: true, others: true },
   showImagery: false,
   showAoi: true,
 };
@@ -53,8 +52,7 @@ const els = {
   opacity: el("opacity"),
   opacityValue: el("opacity-value"),
   showAccepted: el("show-accepted"),
-  showRejected: el("show-rejected"),
-  showUnclear: el("show-unclear"),
+  showOthers: el("show-others"),
   imagery: el("layer-imagery"),
   aoi: el("layer-aoi"),
   projects: el("projects"),
@@ -178,20 +176,16 @@ function winning(record, p) {
 }
 
 function classify(record, p) {
-  const yes = shareOf(p, YES), no = shareOf(p, NO);
-  if (yes > state.threshold && yes >= no) return "accepted";
-  if (no > state.threshold) return "rejected";
-  return "unclear";
+  return shareOf(p, YES) > state.threshold ? "accepted" : "others";
 }
 
 const colorOf = (record, v) => {
   const o = record.optionByValue.get(v);
   return o ? o.iconColor : UNCLEAR_COLOR;
 };
-const decisionColor = (record, d) =>
-  d === "accepted" ? colorOf(record, YES) : d === "rejected" ? colorOf(record, NO) : UNCLEAR_COLOR;
+const decisionColor = (record, d) => (d === "accepted" ? colorOf(record, YES) : UNCLEAR_COLOR);
 
-const BORDER = { accepted: "#1B5E20", rejected: "#B71C1C", unclear: "#102027" };
+const BORDER = { accepted: "#1B5E20", others: "#102027" };
 const polyStyle = (record, f) => {
   const d = classify(record, f.properties);
   return { color: BORDER[d], weight: Math.max(1.5, Math.round((1 - state.fillOpacity) * 3)), opacity: 1, fillColor: decisionColor(record, d), fillOpacity: state.fillOpacity };
@@ -225,7 +219,7 @@ function popup(record, p) {
 }
 
 function tally(record) {
-  const c = { accepted: 0, rejected: 0, unclear: 0, below: 0 };
+  const c = { accepted: 0, others: 0, below: 0 };
   for (const f of record.geojson.features) {
     c[classify(record, f.properties)]++;
     if (record.verification_number && Number(f.properties.total_count) < record.verification_number) c.below++;
@@ -296,8 +290,8 @@ function renderProjects() {
       `<span class="name" data-expand>${record.showInfo ? "▾" : "▸"} ${record.name}</span>` +
       `<button class="link x" data-remove>remove</button></div>` +
       `<div class="meta">${record.project_type} · ${record.geojson.features.length} tasks${progress}${target}${below}${record.options_source === "fallback-defaults" ? " · default labels" : ""}${note}</div>` +
-      `<div class="counts"><span class="count-accepted">accepted ${c.accepted}</span><span class="count-rejected">rejected ${c.rejected}</span><span class="count-unclear">unclear ${c.unclear}</span></div>` +
-      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="rejected">rejected</button><button class="link" data-dl="unclear">not sure</button><button class="link" data-all>all .geojson</button><button class="link" data-csv>all .csv</button></div>` +
+      `<div class="counts"><span class="count-accepted">accepted ${c.accepted}</span><span class="count-others">others ${c.others}</span></div>` +
+      `<div class="downloads">Download: <button class="link" data-dl="accepted">accepted</button><button class="link" data-dl="others">others</button><button class="link" data-all>all .geojson</button><button class="link" data-csv>all .csv</button></div>` +
       (record.showInfo ? infoHtml(record) : "");
 
     card.querySelector("[data-results]").addEventListener("change", (ev) => toggleProject(record, ev.target.checked));
@@ -362,7 +356,7 @@ function centroid(g) {
 
 function readable(record, p) {
   return {
-    project_id: record.numeric_id,
+    project_id: Number(record.numeric_id),
     project_name: record.name,
     task_id: p.task_id,
     validation_result_50: classify(record, p),
@@ -517,8 +511,7 @@ async function loadFromUrl() {
   if (hide !== null) {
     for (const d of DECISIONS) state.show[d] = !hide.includes(d[0]);
     els.showAccepted.checked = state.show.accepted;
-    els.showRejected.checked = state.show.rejected;
-    els.showUnclear.checked = state.show.unclear;
+    els.showOthers.checked = state.show.others;
   }
   const ids = (params.get("p") || "").split(",").filter(Boolean);
   for (const id of ids) {

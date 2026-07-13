@@ -20,14 +20,14 @@ Paste a project and click Add, for example:
 ```mermaid
 flowchart LR
   A[Paste project URL] --> B[Read labels + data<br/>from MapSwipe]
-  B --> C[Each area gets a result:<br/>Accepted / Rejected / Unclear]
-  C --> D[Map it: green / red / grey]
+  B --> C[Each area gets a result:<br/>Accepted / Others]
+  C --> D[Map it: green / grey]
   D --> E[Adjust threshold<br/>and opacity]
   E --> F[Export GeoJSON or CSV]
 ```
 
 Each area is one MapSwipe task (here, an H3 hexagon). It is **Accepted** if more than your threshold
-of mappers said yes, **Rejected** if more than your threshold said no, otherwise **Unclear**.
+of mappers said yes, otherwise **Others**.
 
 ## Controls
 
@@ -35,9 +35,9 @@ of mappers said yes, **Rejected** if more than your threshold said no, otherwise
 | --- | --- |
 | Accept threshold | The share of mappers who must say yes for an area to count as accepted. |
 | See-through grid | Fill opacity of the colored areas, so you can see imagery behind them. |
-| Show on map | Toggle the accepted, rejected, and unclear areas on the map. |
+| Show on map | Toggle the accepted and other areas on the map. |
 | Project checkbox / imagery / AOI | Toggle the whole project, its satellite imagery, and its area. |
-| Download | Save accepted, rejected, or not-sure areas as GeoJSON, or all areas as CSV. |
+| Download | Save accepted or other areas as GeoJSON, or all areas as CSV. |
 | Open in uMap | Open the accepted areas as points in a new editable uMap. |
 
 Areas cluster into counts when zoomed out and become the colored grid when zoomed in. Very large

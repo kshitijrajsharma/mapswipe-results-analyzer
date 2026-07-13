@@ -39,8 +39,7 @@
         <strong id="threshold-value">50%</strong> of mappers said yes</label>
       <input id="threshold" type="range" min="0" max="100" value="50" />
 
-      <p class="hint">More than the threshold said yes &rarr; Accepted. More than it said no &rarr; Rejected.
-        Neither &rarr; Unclear.</p>
+      <p class="hint">More than the threshold said yes &rarr; Accepted. Everything else &rarr; Others.</p>
 
       <label for="opacity" class="spaced">See-through grid:
         <strong id="opacity-value">35%</strong></label>
@@ -51,8 +50,7 @@
         <label><input type="checkbox" id="layer-imagery"> imagery</label>
         <label><input type="checkbox" id="layer-aoi" checked> AOI</label>
         <label><input type="checkbox" id="show-accepted" checked> <span class="sw accepted"></span> accepted</label>
-        <label><input type="checkbox" id="show-rejected" checked> <span class="sw rejected"></span> rejected</label>
-        <label><input type="checkbox" id="show-unclear" checked> <span class="sw unclear"></span> unclear</label>
+        <label><input type="checkbox" id="show-others" checked> <span class="sw others"></span> others</label>
       </div>
     </section>
 
@@ -71,8 +69,7 @@
   <main id="map">
     <div id="legend">
       <div><span class="swatch accepted"></span> Accepted</div>
-      <div><span class="swatch rejected"></span> Rejected</div>
-      <div><span class="swatch unclear"></span> Unclear</div>
+      <div><span class="swatch others"></span> Others</div>
       <div><span class="swatch aoi"></span> Project area</div>
     </div>
   </main>
